@@ -1,0 +1,48 @@
+.menubar {
+background-color: blue;
+}
+
+
+.left{
+    float:left;
+    width:40%;
+}
+.right{
+    right:0;
+    width:35%;
+    height:100%;
+    background:aqua;
+    position:fixed;
+}
+
+html, body{
+    height:100%;
+    font-family: georgia;
+}
+
+#article p{
+    text-indent: 1em;
+}
+
+#articleinfo p{
+margin-left: 10px;
+}
+
+.checkboxdiv {
+padding:6px;
+}
+
+del {
+    background-color:#ff7070;
+  }
+ins {
+  background-color:#2eff2e;
+}
+label {
+background-color: rgba(255,255,255,0.7);
+border-radius: 3px;
+padding-left:8px;
+padding-right:8px;
+padding-top: 3px;
+padding-bottom: 3px;
+}
