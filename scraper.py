@@ -21,7 +21,7 @@ def cleanUp(data, archive):
         toPop = []
         for article in data[site]:
             lastDate = datetime.strptime(list(data[site][article].keys())[-1], '%m/%d/%Y, %H:%M:%S')
-            if (datetime.now()-lastDate).days >= 1:
+            if (datetime.now()-lastDate).days >= 2:
                 print(article, end=" ")
                 if len(data[site][article]) > 1:
                     if article in archive[site]:
