@@ -10,7 +10,7 @@
 <div id="articleinfo" class="right">
 </div>
 
-<script src="{{ url_for('static', filename='lib/diff_match_patch_uncompressed.js') }}" type="text/javascript"></script>
+<script src="https://github.com/google/diff-match-patch/blob/master/javascript/diff_match_patch_uncompressed.js" type="text/javascript"></script>
 <script>var articledata = {{articledata|tojson}};
 var keys = Object.keys(articledata);
 var tags = {"headline":"h1", "subhead":"h4", "body":null};
