@@ -7,7 +7,6 @@ Created on Wed Sep  9 10:13:04 2020
 
 import requests
 import re
-import newsdiffsemail
 #import random
 import json
 from datetime import datetime
@@ -300,28 +299,18 @@ if __name__ == "__main__":
     justchanged = []
     
     scrapers = [WashingtonPost(), NewYorkTimes(), APNews()]
-    eclient = newsdiffsemail.CustomEmail()
+    
     for scraper in scrapers:
         justchanged = []
-        articles = scraper.getArticles()
         articles = scraper.getArticles()
         func = partial(multiThreadCompatibility, scraper)
         with concurrent.futures.ThreadPoolExecutor(max_workers=len(articles)) as executor:
             executor.map(func, articles)
-        if len(justchanged) > 0:
-            eclient.addHeader(scraper.name)
-            for changed in justchanged:
-                eclient.addArticle(changed)
-
-    writeToFile(data)
+   
     
-    if not eclient.empty:
-        eclient.send()
-    ##cleanup
     with open('archive.json') as f:
         archive = json.load(f)
-    with open('data.json') as f:
-        data = json.load(f)
+
     data, archive = cleanUp(data, archive)
     writeToFile(data)
     writeToFile(archive, 'archive.json')
