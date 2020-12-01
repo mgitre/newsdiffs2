@@ -6,7 +6,7 @@ Created on Fri Sep 11 10:15:47 2020
 """
 
 from flask import Flask, render_template, abort, redirect
-from classbased import WashingtonPost, NewYorkTimes, APNews
+from scraper import WashingtonPost, NewYorkTimes, APNews
 import json, re
 app = Flask(__name__)
 app.config["DEBUG"] = True

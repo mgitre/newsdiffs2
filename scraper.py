@@ -75,6 +75,9 @@ def getHTMLURL(url):
 def alert(message):
     print("NEW MESSAGE!!! "+message)
 
+def addToUnscraped(article, reason):
+    with open("unscraped.txt","a") as f:
+        f.write(article+" missing "+reason+"\n")
 
 class BaseScraper:
     def __init__(self):
@@ -119,7 +122,69 @@ class BaseScraper:
                 #print(articledata)
                 justchanged.append((self.name,article, latestdata["headline"], len(self.data[article])))
         return self.data
-
+    
+    
+    def processArticle(self, article):
+        try:
+            html, url = getHTMLURL(article)
+            if url!=article:
+                global data
+                url=self.formatUrl(re.search(self.regex, url).group(0))
+                if article in data[self.name]:
+                    data[self.name][url] = data[self.name].pop(article)
+            
+            print(url)
+            soup = BeautifulSoup(html, features="lxml")
+            
+            #loads the headline
+            headline = None
+            for name, attrs in self.headlineMatches:
+                matchAttempt = soup.find(name,attrs)
+                if matchAttempt:
+                    headline = matchAttempt.get_text()
+                    break
+            if not headline:
+                addToUnscraped(url, "headline")
+            #loads the byline(s)
+            byline=None
+            for name, attrs in self.bylineMatches:
+                matchAttempt = soup.find(name, attrs)
+                if matchAttempt:
+                    bylinesoup = matchAttempt
+                    #fix to get rid of annoying extra text
+                    for hidden in bylinesoup.find_all(attrs={"class":"hidden"}):
+                        hidden.decompose()
+                    byline = bylinesoup.get_text().replace(u'\xa0',' ')
+                    break
+            
+            
+            #loads the subheadline
+            subheadline = None
+            for name, attrs in self.subheadlineMatches:
+                matchAttempt = soup.find(name,attrs)
+                if matchAttempt:
+                    subheadline = matchAttempt.get_text()
+                    break
+            
+            #loads article body
+            content = None
+            for name, attrs in self.articlebodyMatches:
+                articlebody = soup.find(name, attrs)
+                if articlebody:
+                    paragraphs=[]
+                    for paragraph in articlebody.find_all(['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6']):
+                        text = paragraph.get_text()
+                        if text=="Read more:":
+                            break
+                        else:
+                            paragraphs.append("<{0}>{1}</{0}>".format(paragraph.name, text))
+                    content = "\n".join(paragraphs)
+                    break
+            if not content:
+                addToUnscraped(url, "content")
+            return url, {"headline":headline, "subheadline":subheadline, "byline":byline, "body":content}
+        except Exception as e:
+            print(e)
 
 class WashingtonPost(BaseScraper):
     def __init__(self):
@@ -127,45 +192,13 @@ class WashingtonPost(BaseScraper):
         self.initialpages = ["https://washingtonpost.com"]
         self.name = "washingtonpost"
         self.exclusions = ['live-updates']
+        self.headlineMatches = [("h1",{"data-qa":"headline"}),("h1", {"class":"title"}),("h1",{"itemprop":"headline"})]
+        self.subheadlineMatches = [("h2", {"data-pb-field":"subheadlines.basic"}),("h2", {"data-qa":"subheadline"})]
+        self.bylineMatches = [("div",{"class":"author-names"}), ("div",{"class":"contributor"})]
+        self.articlebodyMatches = [("div",{"class":"article-body"}),("article", {"data-qa":"main"}), ("div",{"class":"main"})]
         BaseScraper.__init__(self)
-
-    def processArticle(self, article):
-        try:
-            html, url = getHTMLURL(article)
-            if url != article:
-                try:
-                    url = self.formatUrl(re.search(self.regex, url).group(0))
-                except:
-                    return
-                if article in data:
-                    data[self.name][url] = data[self.name].pop(article)
-                article = url
-            print(article)
-            soup = BeautifulSoup(html, features="lxml")
-            headline = soup.find("h1", {"data-qa": "headline"}).get_text()
-    
-            # messy way of saying "if subhead exists, subhead is subhead, if not, it's none"
-            subhead = soup.find(attrs={"data-qa": "subheadline"})
-            if subhead != None:
-                subhead = subhead.get_text()
-    
-            # this finds the main section of the article
-            articlebody = soup.find("div", {"class": "article-body"})
-            paragraphs = []
-            for paragraph in articlebody.find_all():
-                if paragraph.name in ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6']:
-                    text = paragraph.get_text(strip=False)
-                    if text == "Read more:":
-                        break
-                    else:
-                        paragraphs.append(
-                            "<{0}>{1}</{0}>".format(paragraph.name, paragraph.get_text()))
-            content = '\n'.join(paragraphs)
-            return article, {"headline": headline, "subhead": subhead, "body": content}
-        except Exception as e:
-            print(e)
-            return
-
+            
+        
     def formatUrl(self, url):
         return url
 
@@ -177,50 +210,12 @@ class NewYorkTimes(BaseScraper):
                              'https://www.nytimes.com/section/todayspaper']
         self.name = "nytimes"
         self.exclusions = ['interactive']
+        self.headlineMatches = [("h1",{"itemprop":"headline"})]
+        self.subheadlineMatches = [("p", {"id":"article-summary"}),("p", {"class":"css-h99hf"})]
+        self.bylineMatches = [("p",{"itemprop":"author"})]
+        self.articlebodyMatches = [("section",{"itemprop":"articleBody"})]
         BaseScraper.__init__(self)
-
-    def processArticle(self, article):
-        print(article)
-        html, url = getHTMLURL(article)
-        if url != article:
-            try:
-                url = self.formatUrl(re.search(self.regex, url).group(0))
-            except:
-                return
-            if article in data:
-                data[self.name][url] = data[self.name].pop(article)
-            article = url
-        soup = BeautifulSoup(html, features="lxml")
-        try:
-            headline = soup.find("h1", {"itemprop": "headline"}).get_text()
-        except:
-            try:
-                headline = soup.find("meta", {"property": "og:title"})[
-                    "content"]
-            except:
-                headline = None
-        try:
-            subhead = soup.find(attrs={"id": "article-summary"}).get_text()
-        except:
-            try:
-                subhead = soup.find("meta", {"name": "description"})["content"]
-            except:
-                subhead = None
-        try:
-            
-            articlebodies = soup.findAll(
-                "div", {"class": "StoryBodyCompanionColumn"})
-            paragraphs = []
-            for div in articlebodies:
-                for paragraph in div.findAll():
-                    if paragraph.name in ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6']:
-                        paragraphs.append(
-                            "<{0}>{1}</{0}>".format(paragraph.name, paragraph.get_text()))
-            content = '\n'.join(paragraphs)
-            return article, {"headline": headline, "subhead": subhead, "body": content}
-        except Exception as e:
-            print(e)
-            return
+        
 
     def formatUrl(self, url):
         if url[0] == '/':
@@ -233,38 +228,13 @@ class APNews(BaseScraper):
         self.initialpages = ["https://apnews.com"]
         self.name = "apnews"
         self.exclusions = []
+        self.headlineMatches = [("div",{"data-key":"card-headline"})]
+        self.subheadlineMatches = []
+        self.bylineMatches = [("span",{"class":re.compile("Component-bylines-")})]
+        self.articlebodyMatches = [("div",{"class":"Article"})]
         BaseScraper.__init__(self)
 
-    def processArticle(self, article):
-        try:
-            html, url = getHTMLURL(article)
-            if url != article:
-                try:
-                    url = self.formatUrl(re.search(self.regex, url).group(0))
-                except:
-                    return
-                if article in data:
-                    data[self.name][url] = data[self.name].pop(article)
-                article = url
-            print(article)
-            soup = BeautifulSoup(getHTML(article), features="lxml")
-            headline = soup.find("div",{"class":"CardHeadline"}).find("h1").get_text()
     
-            subhead = None
-    
-            # this finds the main section of the article
-            articlebody = soup.find("div", {"class": "Article"})
-            paragraphs = []
-            for paragraph in articlebody.find_all():
-                if paragraph.name in ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6']:
-                    paragraphs.append(
-                        "<{0}>{1}</{0}>".format(paragraph.name, paragraph.get_text()))
-            content = '\n'.join(paragraphs)
-            return article, {"headline": headline, "subhead": subhead, "body": content}
-        except Exception as e:
-            print(e)
-            return
-
     def formatUrl(self, url):
         formatted = url
         if url[0] == '/':

@@ -13,7 +13,7 @@
 <script src="{{ url_for('static', filename='lib/diff_match_patch_uncompressed.js') }}" type="text/javascript"></script>
 <script>var articledata = {{articledata|tojson}};
 var keys = Object.keys(articledata);
-var tags = {"headline":"h1", "subhead":"h4", "body":null};
+var tags = {"headline":"h1", "subhead":"h4", "byline":"strong","body":null};
 
 tagArray = ["<p>","<h1>","<h2>","<h3>","<h4>","<h5>","<h6>","</p>","</h1>","</h2>","</h3>","</h4>","</h5>","</h6>"];
 tagsForDiffs = ["<del>","</del>","<ins>","</ins>"]
@@ -28,7 +28,9 @@ function nonComparisonView(n){
     if(!!version["subhead"]){
         content += '<h4 class="subhead">'+version["subhead"]+'</h4>';
     }
-    content += version["body"];
+    if(!!version["body"]){
+		content += version["body"];
+	}
     document.getElementById("article").innerHTML = content;
 }
 
@@ -37,8 +39,8 @@ function compareNthArticles(n, n2){
     var dmp = new diff_match_patch();
     dmp.Diff_ShowPara = false;
     document.getElementById("article").innerHTML = "";
-    for(var j = 0; j < 3; j++){
-        element = ["headline","subhead","body"][j]
+    for(var j = 0; j < 4; j++){
+        element = ["headline","subhead","byline","body"][j]
         var content = ["",""];
         for(var i = 0; i < 2; i++){
             var version = articledata[keys[ns[i]]];
