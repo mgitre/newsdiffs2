@@ -19,34 +19,32 @@ def cleanUp(data, archive):
     for site in data:
         archive[site] = archive.get(site,{})
         toPop = []
+        #Goes through every article for each site
         for article in data[site]:
             lastDate = datetime.strptime(list(data[site][article].keys())[-1], '%m/%d/%Y, %H:%M:%S')
+            #if article is more than 2 days old
             if (datetime.now()-lastDate).days >= 2:
                 print(article, end=" ")
+                #if more than 1 version of article exists, archive it
                 if len(data[site][article]) > 1:
                     if article in archive[site]:
                         for articleVersion in data[site][article]:
                             if data[site][article][articleVersion] != list(archive[site][article].values())[-1]:
                                 archive[site][article].update(data[site][article][articleVersion])
-                        #data[site].pop(article)
-                        #toPop.append(article)
                         print("was updated in archive")
                     else:
                         archive[site][article] = data[site][article]
                         print("was added to archive")
-                        #toPop.append(article)
+                #delete it from the main data dictionary
                 else:
                     print("was deleted")
                 toPop.append(article)
         for article in toPop:
             data[site].pop(article)
     return data, archive
-                #if 
-            #print((datetime.now()-lastDate).days > 1)
-            
 
 
-# This just uses cool headers to download the HTML of a given URL.
+#headers to (mostly) get around bot detection, i still recommend using a VPN
 def getHTML(url):
     headers = [{
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
@@ -59,6 +57,7 @@ def getHTML(url):
     request = requests.get(url, headers=headers[0])
     return request.text
 
+#same as above, except in the case of a redirect, returns final url
 def getHTMLURL(url):
     headers = [{
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
@@ -71,18 +70,21 @@ def getHTMLURL(url):
     request = requests.get(url, headers=headers[0])
     return request.text, request.url
 
-
+#change this to be whatever you want
 def alert(message):
     print("NEW MESSAGE!!! "+message)
 
+#logs articles that had issues with scraping
 def addToUnscraped(article, reason):
     with open("unscraped.txt","a") as f:
         f.write(article+" missing "+reason+"\n")
 
+
+#establishes base methods for each site, making it fairly easy to add new websites to scrape
 class BaseScraper:
     def __init__(self):
         self.data = data.get(self.name, {})
-
+    #goes to homepage of website and finds all urls that match the given regex pattern
     def getArticles(self):
         articles = []
         for initialpage in self.initialpages:
@@ -105,6 +107,8 @@ class BaseScraper:
             if not url in articles:
                 articles.append(url)
         return articles
+    
+    #adds an article to the site's data dictionary
     def addToData(self, article, articledata):
         global justchanged
         if articledata == None:
@@ -123,7 +127,7 @@ class BaseScraper:
                 justchanged.append((self.name,article, latestdata["headline"], len(self.data[article])))
         return self.data
     
-    
+    #scrapes an article given a URL
     def processArticle(self, article):
         try:
             html, url = getHTMLURL(article)
@@ -252,6 +256,7 @@ class APNews(BaseScraper):
 with open('data.json') as f:
     data = json.load(f)
 
+#function to enable multithreaded downloading/processing of articles
 def multiThreadCompatibility(scraper, article):
     processed = scraper.processArticle(article)
     if processed != None:
