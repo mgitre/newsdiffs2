@@ -220,10 +220,10 @@ class NewYorkTimes(BaseScraper):
                              'https://www.nytimes.com/section/todayspaper']
         self.name = "nytimes"
         self.exclusions = ['interactive']
-        self.headlineMatches = [("h1",{"itemprop":"headline"})]
+        self.headlineMatches = [("h1",{"itemprop":"headline"}), ("h1",{"data-testid":"headline"}), ("h1",{"class":"edye5kn2"})]
         self.subheadlineMatches = [("p", {"id":"article-summary"}),("p", {"class":"css-h99hf"})]
-        self.bylineMatches = [("p",{"itemprop":"author"})]
-        self.articlebodyMatches = [("section",{"itemprop":"articleBody"})]
+        self.bylineMatches = [("p",{"itemprop":"author"}),("div",{"class":"css-vp77d3"})]
+        self.articlebodyMatches = [("section",{"itemprop":"articleBody"}), ("section",{"name":"articleBody"})]
         BaseScraper.__init__(self)
         
 
@@ -238,10 +238,10 @@ class APNews(BaseScraper):
         self.initialpages = ["https://apnews.com"]
         self.name = "apnews"
         self.exclusions = []
-        self.headlineMatches = [("div",{"data-key":"card-headline"})]
+        self.headlineMatches = [("div",{"data-key":"card-headline"}),("div",{"class":re.compile("headline-")})]
         self.subheadlineMatches = []
-        self.bylineMatches = [("span",{"class":re.compile("Component-bylines-")})]
-        self.articlebodyMatches = [("div",{"class":"Article"})]
+        self.bylineMatches = [("span",{"class":re.compile("Component-bylines-")}), ("div",{"class":re.compile("byline-")})]
+        self.articlebodyMatches = [("div",{"class":"Article"}),("article",{"class":re.compile("article-")})]
         BaseScraper.__init__(self)
 
     
