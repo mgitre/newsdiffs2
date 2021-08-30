@@ -290,7 +290,7 @@ if __name__ == "__main__":
             eclient.addHeader(scraper.name)
             for changed in justchanged:
                 eclient.addArticle(changed)
-    if not eclient.empty:
+    if use_email and not eclient.empty:
         eclient.send()
    
     
