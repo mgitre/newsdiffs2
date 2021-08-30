@@ -1,3 +1,8 @@
-requests==2.21.0
-Flask==1.1.2
-beautifulsoup4==4.9.3
+requests
+Flask
+beautifulsoup4
+lxml
+smtplib
+ssl
+email
+
