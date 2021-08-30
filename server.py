@@ -31,7 +31,7 @@ def fixUrl(c, url):
 
 @app.route('/<site>/<path:article>')
 def articleView(site, article):
-    with open("data.json") as f:
+    with open("data/data.json") as f:
         data = json.load(f)
     sites = list(data.keys())
     if not site in sites:
@@ -47,7 +47,7 @@ def articleView(site, article):
 
 @app.route('/archive/<site>/<path:article>')
 def archiveView(site, article):
-    with open("archive.json") as f:
+    with open("data/archive.json") as f:
         data = json.load(f)
     sites = list(data.keys())
     if not site in sites:

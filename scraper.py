@@ -259,7 +259,7 @@ class APNews(BaseScraper):
 
 
 
-with open('data.json') as f:
+with open('data/data.json') as f:
     data = json.load(f)
 
 #function to enable multithreaded downloading/processing of articles
@@ -271,7 +271,7 @@ def multiThreadCompatibility(scraper, article):
         if toAdd != None:
             data[scraper.name] = toAdd
 
-def writeToFile(data, file="data.json"):
+def writeToFile(data, file="data/data.json"):
     with open(file, 'w', encoding="utf-8") as json_file:
         json.dump(data, json_file, indent=4)
 
@@ -294,9 +294,9 @@ if __name__ == "__main__":
         eclient.send()
    
     
-    with open('archive.json') as f:
+    with open('data/archive.json') as f:
         archive = json.load(f)
 
     data, archive = cleanUp(data, archive)
     writeToFile(data)
-    writeToFile(archive, 'archive.json')
+    writeToFile(archive, 'data/archive.json')
