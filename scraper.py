@@ -13,13 +13,14 @@ from datetime import datetime
 from bs4 import BeautifulSoup
 from functools import partial
 import concurrent.futures
+import emailclient
 import yaml
 
 with open("config.yaml") as f:
     config=yaml.safe_load(f)
 
 path=config['SERVER']['ACCESS']
-
+use_email=config['EMAIL']['USE_EMAIL']
 def cleanUp(data, archive):
     for site in data:
         archive[site] = archive.get(site,{})
@@ -275,17 +276,22 @@ def writeToFile(data, file="data.json"):
         json.dump(data, json_file, indent=4)
 
 if __name__ == "__main__":
-    
-    justchanged = []
-    
+
     scrapers = [WashingtonPost(), NewYorkTimes(), APNews()]
-    
+    if use_email:
+        eclient=emailclient.CustomEmail()
     for scraper in scrapers:
         justchanged = []
         articles = scraper.getArticles()
         func = partial(multiThreadCompatibility, scraper)
         with concurrent.futures.ThreadPoolExecutor(max_workers=len(articles)) as executor:
             executor.map(func, articles)
+        if len(justchanged) > 0 and use_email:
+            eclient.addHeader(scraper.name)
+            for changed in justchanged:
+                eclient.addArticle(changed)
+    if not eclient.empty:
+        eclient.send()
    
     
     with open('archive.json') as f:
