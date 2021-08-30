@@ -13,7 +13,12 @@ from datetime import datetime
 from bs4 import BeautifulSoup
 from functools import partial
 import concurrent.futures
-path = "http://192.168.1.10:3301/"
+import yaml
+
+with open("config.yaml") as f:
+    config=yaml.safe_load(f)
+
+path=config['SERVER']['ACCESS']
 
 def cleanUp(data, archive):
     for site in data:

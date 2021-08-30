@@ -1,0 +1,6 @@
+SERVER:
+  #where flask should host ND
+  HOST: 127.0.0.1
+  PORT: 3301
+  #where ND will be accessed
+  ACCESS: http://127.0.0.1:3301/

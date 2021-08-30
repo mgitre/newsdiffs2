@@ -8,10 +8,18 @@ Created on Fri Sep 11 10:15:47 2020
 from flask import Flask, render_template, abort, redirect
 from scraper import WashingtonPost, NewYorkTimes, APNews
 import json, re
+import yaml
 app = Flask(__name__)
 app.config["DEBUG"] = True
 nameToClass = {"washingtonpost":WashingtonPost, "nytimes":NewYorkTimes, "apnews":APNews}
-base_url = "http://192.168.1.10:3301/"
+
+with open("config.yaml") as f:
+    config=yaml.safe_load(f)
+
+base_url=config['SERVER']['ACCESS']
+host=config['SERVER']['HOST']
+port=config['SERVER']['PORT']
+
 
 def fixUrl(c, url):
     newsclass = c()
@@ -48,4 +56,4 @@ def archiveView(site, article):
         abort(404)
     articledata = data[site][article]
     return render_template("article.html", articledata=articledata)
-app.run(port='3301', host="0.0.0.0")
+app.run(port=port, host=host)
