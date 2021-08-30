@@ -14,11 +14,11 @@ app.config["DEBUG"] = True
 nameToClass = {"washingtonpost":WashingtonPost, "nytimes":NewYorkTimes, "apnews":APNews}
 
 with open("config.yaml") as f:
-    config=yaml.safe_load(f)
+    config=yaml.safe_load(f)['SERVER']
 
-base_url=config['SERVER']['ACCESS']
-host=config['SERVER']['HOST']
-port=config['SERVER']['PORT']
+base_url=config['ACCESS']
+host=config['HOST']
+port=config['PORT']
 
 
 def fixUrl(c, url):
