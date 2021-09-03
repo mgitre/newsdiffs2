@@ -7,4 +7,4 @@ Running `scraper.py` scrapes articles from NYTimes, Washington Post, and APNews.
 
 `server.py` serves the web frontend, letting you view articles.
 
-Articles that haven't changed in 2 days but have changes on record are saved to `archive.json`.
+Tested on PostgreSQL 12.8
