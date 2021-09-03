@@ -2,7 +2,4 @@ requests
 Flask
 beautifulsoup4
 lxml
-smtplib
-ssl
-email
-
+psycopg2

@@ -7,13 +7,13 @@ Created on Wed Sep  9 10:13:04 2020
 
 import requests
 import re
-#import random
 import json
 from datetime import datetime
 from bs4 import BeautifulSoup
 from functools import partial
 import concurrent.futures
 import emailclient
+import postgres_handler
 import yaml
 
 with open("config.yaml") as f:
@@ -21,34 +21,8 @@ with open("config.yaml") as f:
 
 path=config['SERVER']['ACCESS']
 use_email=config['EMAIL']['USE_EMAIL']
-def cleanUp(data, archive):
-    for site in data:
-        archive[site] = archive.get(site,{})
-        toPop = []
-        #Goes through every article for each site
-        for article in data[site]:
-            lastDate = datetime.strptime(list(data[site][article].keys())[-1], '%m/%d/%Y, %H:%M:%S')
-            #if article is more than 2 days old
-            if (datetime.now()-lastDate).days >= 2:
-                print(article, end=" ")
-                #if more than 1 version of article exists, archive it
-                if len(data[site][article]) > 1:
-                    if article in archive[site]:
-                        for articleVersion in data[site][article]:
-                            if data[site][article][articleVersion] != list(archive[site][article].values())[-1]:
-                                archive[site][article].update(data[site][article][articleVersion])
-                        print("was updated in archive")
-                    else:
-                        archive[site][article] = data[site][article]
-                        print("was added to archive")
-                #delete it from the main data dictionary
-                else:
-                    print("was deleted")
-                toPop.append(article)
-        for article in toPop:
-            data[site].pop(article)
-    return data, archive
 
+connection=postgres_handler.get_connection()
 
 #headers to (mostly) get around bot detection, i still recommend using a VPN
 def getHTML(url):
@@ -89,7 +63,7 @@ def addToUnscraped(article, reason):
 #establishes base methods for each site, making it fairly easy to add new websites to scrape
 class BaseScraper:
     def __init__(self):
-        self.data = data.get(self.name, {})
+        pass
     #goes to homepage of website and finds all urls that match the given regex pattern
     def getArticles(self):
         articles = []
@@ -109,7 +83,7 @@ class BaseScraper:
                     continue
                 if not url in articles:
                     articles.append(url)
-        for url in list(self.data.keys()):
+        for url, in postgres_handler.get_within_time(connection, self.name):
             if not url in articles:
                 articles.append(url)
         return articles
@@ -119,30 +93,40 @@ class BaseScraper:
         global justchanged
         if articledata == None:
             return
-        global data
-        self.data = data.get(self.name, {})
-        dtime = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
-        articledata = {dtime: articledata}
-        self.data[article] = self.data.get(article, articledata)
-        latestdata = list(articledata.values())[-1]
-        if latestdata != list(self.data[article].values())[-1]:
-            self.data[article].update(articledata)
-            if len(self.data[article]) > 1:
+        article_handler=postgres_handler.ArticleHandler(article, connection)
+        if article_handler.exists:
+            in_db=article_handler.databaseEntry[1]
+            latest_in_db=list(in_db.keys())[-1]
+            latest_entry=in_db[latest_in_db]
+
+            has_changed=False
+            has_fixed_missing=False
+            for key in articledata:
+                if articledata[key]==None:
+                    articledata[key]=latest_entry[key]
+                    continue
+                if latest_entry[key]==None:
+                    latest_entry[key]=articledata[key]
+                    has_fixed_missing=True
+                    continue
+                if articledata[key]!=latest_entry[key]:
+                    has_changed=True
+            if has_changed:
+                in_db.update({datetime.now().strftime("%m/%d/%Y, %H:%M:%S"):articledata})
+                article_handler.update_article(article, in_db)
                 alert(article)
-                #print(articledata)
-                justchanged.append((self.name,article, latestdata["headline"], len(self.data[article])))
-        return self.data
-    
+                justchanged.append(self.name, article, articledata['headline'])
+            elif has_fixed_missing:
+                in_db[datetime.now().strftime("%m/%d/%Y, %H:%M:%S")] = in_db.pop(latest_in_db)
+                article_handler.update_article(article, in_db)
+
+        else:
+            article_handler.create_article(article, self.name, {datetime.now().strftime("%m/%d/%Y, %H:%M:%S"):articledata})
+        
     #scrapes an article given a URL
     def processArticle(self, article):
         try:
             html, url = getHTMLURL(article)
-            if url!=article:
-                global data
-                url=self.formatUrl(re.search(self.regex, url).group(0))
-                if article in data[self.name]:
-                    data[self.name][url] = data[self.name].pop(article)
-            
             print(url)
             soup = BeautifulSoup(html, features="lxml")
             
@@ -198,7 +182,7 @@ class BaseScraper:
 
 class WashingtonPost(BaseScraper):
     def __init__(self):
-        self.regex = "https://www\.washingtonpost\.com/(?:politics|nation|world|elections|us-policy)/(?:[^/]*/)?\d{4}/\d{2}/\d{2}/(?:[^/]*/|[^.]*.html)"
+        self.regex = "https://www\.washingtonpost\.com/(?:politics|nation|world|elections|us-policy)/(?:[^/]*/)?(?:[^/]*/)?\d{4}/\d{2}/\d{2}/(?:[^/]*/|[^.]*.html)"
         self.initialpages = ["https://washingtonpost.com"]
         self.name = "washingtonpost"
         self.exclusions = ['live-updates']
@@ -257,26 +241,14 @@ class APNews(BaseScraper):
         return formatted
 
 
-
-
-with open('data/data.json') as f:
-    data = json.load(f)
-
 #function to enable multithreaded downloading/processing of articles
 def multiThreadCompatibility(scraper, article):
     processed = scraper.processArticle(article)
     if processed != None:
         url, articledata = processed
-        toAdd = scraper.addToData(url, articledata)
-        if toAdd != None:
-            data[scraper.name] = toAdd
-
-def writeToFile(data, file="data/data.json"):
-    with open(file, 'w', encoding="utf-8") as json_file:
-        json.dump(data, json_file, indent=4)
+        scraper.addToData(url, articledata)
 
 if __name__ == "__main__":
-
     scrapers = [WashingtonPost(), NewYorkTimes(), APNews()]
     if use_email:
         eclient=emailclient.CustomEmail()
@@ -290,13 +262,3 @@ if __name__ == "__main__":
             eclient.addHeader(scraper.name)
             for changed in justchanged:
                 eclient.addArticle(changed)
-    if use_email and not eclient.empty:
-        eclient.send()
-   
-    
-    with open('data/archive.json') as f:
-        archive = json.load(f)
-
-    data, archive = cleanUp(data, archive)
-    writeToFile(data)
-    writeToFile(archive, 'data/archive.json')

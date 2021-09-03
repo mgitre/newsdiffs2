@@ -9,6 +9,8 @@ from flask import Flask, render_template, abort, redirect
 from scraper import WashingtonPost, NewYorkTimes, APNews
 import json, re
 import yaml
+import postgres_handler
+
 app = Flask(__name__)
 app.config["DEBUG"] = True
 nameToClass = {"washingtonpost":WashingtonPost, "nytimes":NewYorkTimes, "apnews":APNews}
@@ -31,29 +33,18 @@ def fixUrl(c, url):
 
 @app.route('/<site>/<path:article>')
 def articleView(site, article):
-    with open("data/data.json") as f:
-        data = json.load(f)
-    sites = list(data.keys())
-    if not site in sites:
+    if not site in nameToClass:
         abort(404)
     fixedUrl = fixUrl(nameToClass[site], article)
-    if fixedUrl != article and fixedUrl != None:
+    if fixedUrl==None:
+        abort(404)
+    if fixedUrl != article:
         return redirect(base_url+"{}/{}".format(site,fixedUrl))
-    if not article in data[site]:
-        return render_template("archive.html", site=site, article=article)
-    articledata = data[site][article]
+    article_handler=postgres_handler.ArticleHandler(article)
+    if not article_handler.exists:
+        abort(404)
+    articledata = article_handler.databaseEntry[1]
     return render_template("article.html", articledata=articledata)
 
 
-@app.route('/archive/<site>/<path:article>')
-def archiveView(site, article):
-    with open("data/archive.json") as f:
-        data = json.load(f)
-    sites = list(data.keys())
-    if not site in sites:
-        abort(404)
-    if not article in data[site]:
-        abort(404)
-    articledata = data[site][article]
-    return render_template("article.html", articledata=articledata)
 app.run(port=port, host=host)
