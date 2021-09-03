@@ -2,3 +2,4 @@ data.json
 archive.json
 *.pyc
 unscraped.txt
+config.yaml

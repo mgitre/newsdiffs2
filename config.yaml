@@ -17,3 +17,9 @@ EMAIL:
   #smtp server information
   SMTP_SERVER: smtp.gmail.com
   PORT: 465
+
+POSTGRES:
+  HOST: 127.0.0.1
+  PORT: 5432
+  USERNAME: postgres
+  PASSWORD: password1
