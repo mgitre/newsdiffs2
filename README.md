@@ -7,4 +7,9 @@ Running `scraper.py` scrapes articles from NYTimes, Washington Post, and APNews.
 
 `server.py` serves the web frontend, letting you view articles.
 
+
+### Database Setup
+
+Import newsdiffs2.sql into PostgreSQL
+
 Tested on PostgreSQL 12.8
