@@ -10,6 +10,6 @@ Running `scraper.py` scrapes articles from NYTimes, Washington Post, and APNews.
 
 ### Database Setup
 
-Import newsdiffs2.sql into PostgreSQL
+Import `newsdiffs2.sql` into PostgreSQL
 
 Tested on PostgreSQL 12.8
