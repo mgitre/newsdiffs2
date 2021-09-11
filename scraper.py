@@ -241,33 +241,6 @@ class NewYorkTimes(BaseScraper):
         return url
 
 
-class APNews(BaseScraper):
-    def __init__(self):
-        self.regex = "(?:https://apnews\\.com)?/article/.+[a-z0-9]{32}$"
-        self.initialpages = ["https://apnews.com"]
-        self.name = "apnews"
-        self.exclusions = []
-        self.headlineMatches = [
-            ("div", {"data-key": "card-headline"}), ("div", {"class": re.compile("headline-")})]
-        self.subheadlineMatches = []
-        self.bylineMatches = [("span", {"class": re.compile(
-            "Component-bylines-")}), ("div", {"class": re.compile("byline-")})]
-        self.articlebodyMatches = [("div", {"class": "Article"}), ("article", {
-            "class": re.compile("article-")})]
-        BaseScraper.__init__(self)
-
-    def formatUrl(self, url):
-        formatted = url
-        if url[0] == '/':
-            formatted = "https://apnews.com" + url
-        searched = re.search(
-            "https://apnews\\.com/(article/.+)[a-z0-9]{32}$", formatted)
-        if searched is not None:
-            groups = searched.groups()
-            if len(groups) != 0:
-                formatted = formatted.replace(groups[0], "")
-        return formatted
-
 
 # function to enable multithreaded downloading/processing of articles
 def multiThreadCompatibility(scraper, article):
@@ -278,7 +251,7 @@ def multiThreadCompatibility(scraper, article):
 
 
 if __name__ == "__main__":
-    scrapers = [WashingtonPost(), NewYorkTimes(), APNews()]
+    scrapers = [WashingtonPost(), NewYorkTimes()]
     if use_email:
         eclient = emailclient.CustomEmail()
     for scraper in scrapers:

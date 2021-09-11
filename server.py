@@ -6,7 +6,7 @@ Created on Fri Sep 11 10:15:47 2020
 """
 
 from flask import Flask, render_template, abort, redirect
-from scraper import WashingtonPost, NewYorkTimes, APNews
+from scraper import WashingtonPost, NewYorkTimes
 import json
 import re
 import yaml
@@ -16,8 +16,7 @@ app = Flask(__name__)
 app.config["DEBUG"] = True
 nameToClass = {
     "washingtonpost": WashingtonPost,
-    "nytimes": NewYorkTimes,
-    "apnews": APNews}
+    "nytimes": NewYorkTimes}
 
 with open("config.yaml") as f:
     config = yaml.safe_load(f)['SERVER']
